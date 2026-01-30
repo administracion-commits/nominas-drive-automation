@@ -6,7 +6,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 
 PDF_ENTRADA = "nominas.pdf"
-DRIVE_FOLDER_ID = "https://drive.google.com/drive/folders/1K2kybinDirbmt6E8JavuiLDhXENLN703"
+DRIVE_FOLDER_ID = "1K2kybinDirbmt6E8JavuiLDhXENLN703"
 CREDS_FILE = "credentials.json"
 
 def get_drive_service():
@@ -42,4 +42,5 @@ for i, page in enumerate(reader.pages, 1):
     ).execute()
 
 print("Proceso terminado correctamente")
+
 
