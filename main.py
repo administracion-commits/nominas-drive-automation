@@ -12,7 +12,7 @@ from googleapiclient.http import MediaIoBaseUpload
 # ========= CONFIGURACIÓN =========
 PDF_ENTRADA = "nominas.pdf"
 
-# ID REAL de la carpeta en TU DRIVE PERSONAL
+# ID REAL DE LA CARPETA (DRIVE PERSONAL)
 DRIVE_FOLDER_ID = "1K2kybinDirbmt6E8JavuILDhXENLN703"
 
 DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"
@@ -20,7 +20,6 @@ DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"
 
 
 def get_drive_service():
-    """Autenticación OAuth con refresh token"""
     creds = Credentials(
         token=None,
         refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
@@ -35,17 +34,16 @@ def get_drive_service():
 
 
 def extraer_nombre(texto, indice):
-    """Extrae el nombre del trabajador desde el PDF"""
     patron = r"TRABAJADOR\s*\(nombre\)\s*\n(.+)"
     match = re.search(patron, texto, re.IGNORECASE)
 
     if match:
         return match.group(1).strip().replace(" ", "_")
+
     return f"pagina_{indice}"
 
 
 def subir_pdf_a_drive(drive, nombre_archivo, buffer_pdf):
-    """Sube el PDF a Drive"""
     media = MediaIoBaseUpload(buffer_pdf, mimetype="application/pdf")
 
     drive.files().create(
@@ -55,6 +53,7 @@ def subir_pdf_a_drive(drive, nombre_archivo, buffer_pdf):
         },
         media_body=media,
         fields="id",
+        supportsAllDrives=True,   # 🔑 CLAVE ABSOLUTA
     ).execute()
 
 
