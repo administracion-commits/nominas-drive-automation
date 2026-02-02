@@ -1,9 +1,9 @@
 name: Procesar nóminas y subir a Drive
 
 on:
-  schedule:
-    - cron: "0 6 5 * *"   # día 5 de cada mes a las 06:00 UTC
   workflow_dispatch:
+  schedule:
+    - cron: "0 6 5 * *"   # Día 5 de cada mes a las 06:00 UTC
 
 jobs:
   run:
