@@ -7,12 +7,10 @@ jobs:
   run:
     runs-on: ubuntu-latest
 
-    # 🔴 AQUÍ SE EXPONEN LOS SECRETS AL SCRIPT
     env:
-      GOOGLE_CLIENT_ID: 1066668478917-104s48sqgvbm3jfrm21g3fij4e7an6rh.apps.googleusercontent.com
-      GOOGLE_CLIENT_SECRET: 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
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
       GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
-
 
     steps:
       - name: Checkout repository
