@@ -1,9 +1,8 @@
 name: Procesar nóminas y subir a Drive
 
 on:
-  push:
-    paths:
-      - nominas.pdf
+  schedule:
+    - cron: "0 6 5 * *"   # día 5 de cada mes a las 06:00 UTC
   workflow_dispatch:
 
 jobs:
