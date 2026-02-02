@@ -1,6 +1,9 @@
 name: Procesar nóminas y subir a Drive
 
 on:
+  push:
+    paths:
+      - nominas.pdf
   workflow_dispatch:
 
 jobs:
