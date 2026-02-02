@@ -13,7 +13,7 @@ from googleapiclient.http import MediaIoBaseUpload
 PDF_ENTRADA = "nominas.pdf"
 
 # ID REAL DE LA CARPETA (DRIVE PERSONAL)
-DRIVE_FOLDER_ID = "https://drive.google.com/drive/folders/1Znmc-rOBjfXeVcd51xbU9GVq_oeRwRRl?usp=drive_link"
+DRIVE_FOLDER_ID = "1Znmc-rOBjfXeVcd51xbU9GVq_oeRwRRl"
 
 DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"
 # =================================
@@ -79,4 +79,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
