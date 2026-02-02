@@ -12,7 +12,7 @@ from googleapiclient.http import MediaIoBaseUpload
 # ========= CONFIGURACIÓN =========
 PDF_ENTRADA = "nominas.pdf"
 
-# ID REAL DE LA CARPETA (DRIVE PERSONAL)
+# ID REAL DE LA CARPETA (SOLO EL ID, NO LA URL)
 DRIVE_FOLDER_ID = "1Znmc-rOBjfXeVcd51xbU9GVq_oeRwRRl"
 
 DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"
@@ -20,6 +20,7 @@ DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"
 
 
 def get_drive_service():
+    """Autenticación OAuth usando refresh token"""
     creds = Credentials(
         token=None,
         refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
@@ -34,16 +35,30 @@ def get_drive_service():
 
 
 def extraer_nombre(texto, indice):
-    patron = r"TRABAJADOR\s*\(nombre\)\s*\n(.+)"
-    match = re.search(patron, texto, re.IGNORECASE)
+    """
+    Extrae el nombre del colaborador desde el texto del PDF.
+    Patrones robustos para nóminas españolas.
+    """
+    patrones = [
+        r"Empleado\s*:\s*(.+)",
+        r"Nombre\s+del\s+trabajador\s*:\s*(.+)",
+        r"TRABAJADOR\s*[:\-]?\s*(.+)",
+        r"Apellidos\s+y\s+nombre\s*:\s*(.+)",
+    ]
 
-    if match:
-        return match.group(1).strip().replace(" ", "_")
+    for patron in patrones:
+        match = re.search(patron, texto, re.IGNORECASE)
+        if match:
+            nombre = match.group(1).strip()
+            nombre = re.sub(r"[^\w\s]", "", nombre)  # limpia símbolos raros
+            return nombre.replace(" ", "_")
 
+    # Fallback si no se encuentra el nombre
     return f"pagina_{indice}"
 
 
 def subir_pdf_a_drive(drive, nombre_archivo, buffer_pdf):
+    """Sube un PDF a la carpeta indicada en Drive"""
     media = MediaIoBaseUpload(buffer_pdf, mimetype="application/pdf")
 
     drive.files().create(
@@ -53,7 +68,7 @@ def subir_pdf_a_drive(drive, nombre_archivo, buffer_pdf):
         },
         media_body=media,
         fields="id",
-        supportsAllDrives=True,   # 🔑 CLAVE ABSOLUTA
+        supportsAllDrives=True,
     ).execute()
 
 
@@ -79,5 +94,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
