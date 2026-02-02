@@ -7,6 +7,13 @@ jobs:
   run:
     runs-on: ubuntu-latest
 
+    # 🔴 AQUÍ SE EXPONEN LOS SECRETS AL SCRIPT
+    env:
+      GOOGLE_CLIENT_ID: 1066668478917-104s48sqgvbm3jfrm21g3fij4e7an6rh.apps.googleusercontent.com
+      GOOGLE_CLIENT_SECRET: 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
+      GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,10 +28,5 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Create credentials file
-        run: |
-          echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
-
       - name: Run script
-        run: |
-          python main.py
+        run: python main.py
