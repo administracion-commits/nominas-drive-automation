@@ -12,16 +12,17 @@ from googleapiclient.http import MediaIoBaseUpload
 # ========= CONFIGURACIÓN =========
 PDF_ENTRADA = "nominas.pdf"
 
-# SOLO el ID de la carpeta de Drive (no la URL completa)
+# ✅ ID REAL DE LA CARPETA DE DRIVE (el que confirmaste)
 DRIVE_FOLDER_ID = "1K2kybinDirbmt6E8JavuILDhXENLN703"
 
+# ✅ Scope correcto para crear/subir archivos
 DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"
 # =================================
 
 
 def get_drive_service():
     """
-    Autenticación OAuth usando refresh_token (NO service account)
+    Autenticación OAuth usando refresh_token
     """
     creds = Credentials(
         token=None,
@@ -32,31 +33,57 @@ def get_drive_service():
         scopes=[DRIVE_SCOPE],
     )
 
-    # Refresca el access token usando el refresh token
+    # Refresca el access token
     creds.refresh(Request())
 
     return build("drive", "v3", credentials=creds)
 
 
+def validar_carpeta(drive):
+    """
+    Verifica que la carpeta existe y que tenemos acceso
+    """
+    info = drive.files().get(
+        fileId=DRIVE_FOLDER_ID,
+        fields="id, name, mimeType"
+    ).execute()
+
+    if info.get("mimeType") != "application/vnd.google-apps.folder":
+        raise RuntimeError("El ID indicado NO corresponde a una carpeta de Drive")
+
+
+def limpiar_nombre(nombre):
+    """
+    Elimina caracteres problemáticos para nombres de archivo
+    """
+    nombre = re.sub(r"[\\/:*?\"<>|]", "", nombre)
+    return nombre.strip().replace(" ", "_")
+
+
 def extraer_nombre(texto, indice):
     """
-    Extrae el nombre del trabajador desde el texto del PDF.
-    Ajusta la regex aquí si cambia el formato de la nómina.
+    Extrae el nombre del trabajador desde el texto del PDF
     """
     patron = r"TRABAJADOR\s*\(nombre\)\s*\n(.+)"
     match = re.search(patron, texto, re.IGNORECASE)
 
     if match:
-        return match.group(1).strip().replace(" ", "_")
+        return limpiar_nombre(match.group(1))
     else:
         return f"pagina_{indice}"
 
 
 def subir_pdf_a_drive(drive, nombre_archivo, buffer_pdf):
     """
-    Sube un PDF a Google Drive dentro de la carpeta indicada
+    Sube un PDF NUEVO a Google Drive dentro de la carpeta indicada
     """
-    media = MediaIoBaseUpload(buffer_pdf, mimetype="application/pdf")
+    buffer_pdf.seek(0)
+
+    media = MediaIoBaseUpload(
+        buffer_pdf,
+        mimetype="application/pdf",
+        resumable=False
+    )
 
     drive.files().create(
         body={
@@ -69,8 +96,15 @@ def subir_pdf_a_drive(drive, nombre_archivo, buffer_pdf):
 
 
 def main():
-    reader = PdfReader(PDF_ENTRADA)
+    if not os.path.exists(PDF_ENTRADA):
+        raise FileNotFoundError(f"No se encuentra el archivo {PDF_ENTRADA}")
+
     drive = get_drive_service()
+
+    # 🔴 Validación dura de la carpeta
+    validar_carpeta(drive)
+
+    reader = PdfReader(PDF_ENTRADA)
 
     for i, page in enumerate(reader.pages, start=1):
         texto = page.extract_text() or ""
@@ -82,7 +116,6 @@ def main():
 
         buffer = io.BytesIO()
         writer.write(buffer)
-        buffer.seek(0)
 
         subir_pdf_a_drive(drive, nombre_archivo, buffer)
 
