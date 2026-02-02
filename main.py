@@ -1,6 +1,7 @@
 import re
 import io
 import os
+from datetime import date
 
 from pypdf import PdfReader, PdfWriter
 from google.oauth2.credentials import Credentials
@@ -20,6 +21,7 @@ DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"
 
 
 def get_drive_service():
+    """Autenticación OAuth usando refresh token"""
     creds = Credentials(
         token=None,
         refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
@@ -33,31 +35,39 @@ def get_drive_service():
     return build("drive", "v3", credentials=creds)
 
 
+def mes_anterior():
+    """Devuelve el nombre del mes anterior en español"""
+    meses = [
+        "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+    ]
+    hoy = date.today()
+    if hoy.month == 1:
+        return "diciembre"
+    return meses[hoy.month - 2]
+
+
 def extraer_nombre(texto, indice):
     """
     Extrae el nombre del trabajador desde nóminas con formato:
     TRABAJADOR (nombre)
     APELLIDOS, NOMBRE
     """
-    # Normalizamos saltos de línea
     lineas = [l.strip() for l in texto.splitlines() if l.strip()]
 
     for i, linea in enumerate(lineas):
         if re.search(r"TRABAJADOR\s*\(nombre\)", linea, re.IGNORECASE):
             if i + 1 < len(lineas):
                 nombre = lineas[i + 1]
-
-                # Limpieza del nombre
                 nombre = nombre.replace(",", "")
                 nombre = re.sub(r"[^\w\s]", "", nombre)
-
                 return nombre.replace(" ", "_")
 
-    # Fallback si no se encuentra
     return f"pagina_{indice}"
 
 
 def subir_pdf_a_drive(drive, nombre_archivo, buffer_pdf):
+    """Sube un PDF a Google Drive"""
     media = MediaIoBaseUpload(buffer_pdf, mimetype="application/pdf")
 
     drive.files().create(
@@ -74,11 +84,13 @@ def subir_pdf_a_drive(drive, nombre_archivo, buffer_pdf):
 def main():
     reader = PdfReader(PDF_ENTRADA)
     drive = get_drive_service()
+    mes = mes_anterior()
 
     for i, page in enumerate(reader.pages, start=1):
         texto = page.extract_text() or ""
         nombre = extraer_nombre(texto, i)
-        nombre_archivo = f"{nombre}.pdf"
+
+        nombre_archivo = f"{nombre}_{mes}.pdf"
 
         writer = PdfWriter()
         writer.add_page(page)
