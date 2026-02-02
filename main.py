@@ -12,7 +12,7 @@ from googleapiclient.http import MediaIoBaseUpload
 # ========= CONFIGURACIÓN =========
 PDF_ENTRADA = "nominas.pdf"
 
-# ID REAL DE LA CARPETA (SOLO EL ID, NO LA URL)
+# SOLO EL ID DE LA CARPETA (NO URL)
 DRIVE_FOLDER_ID = "1Znmc-rOBjfXeVcd51xbU9GVq_oeRwRRl"
 
 DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"
@@ -20,7 +20,6 @@ DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"
 
 
 def get_drive_service():
-    """Autenticación OAuth usando refresh token"""
     creds = Credentials(
         token=None,
         refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
@@ -36,29 +35,29 @@ def get_drive_service():
 
 def extraer_nombre(texto, indice):
     """
-    Extrae el nombre del colaborador desde el texto del PDF.
-    Patrones robustos para nóminas españolas.
+    Extrae el nombre del trabajador desde nóminas con formato:
+    TRABAJADOR (nombre)
+    APELLIDOS, NOMBRE
     """
-    patrones = [
-        r"Empleado\s*:\s*(.+)",
-        r"Nombre\s+del\s+trabajador\s*:\s*(.+)",
-        r"TRABAJADOR\s*[:\-]?\s*(.+)",
-        r"Apellidos\s+y\s+nombre\s*:\s*(.+)",
-    ]
+    # Normalizamos saltos de línea
+    lineas = [l.strip() for l in texto.splitlines() if l.strip()]
 
-    for patron in patrones:
-        match = re.search(patron, texto, re.IGNORECASE)
-        if match:
-            nombre = match.group(1).strip()
-            nombre = re.sub(r"[^\w\s]", "", nombre)  # limpia símbolos raros
-            return nombre.replace(" ", "_")
+    for i, linea in enumerate(lineas):
+        if re.search(r"TRABAJADOR\s*\(nombre\)", linea, re.IGNORECASE):
+            if i + 1 < len(lineas):
+                nombre = lineas[i + 1]
 
-    # Fallback si no se encuentra el nombre
+                # Limpieza del nombre
+                nombre = nombre.replace(",", "")
+                nombre = re.sub(r"[^\w\s]", "", nombre)
+
+                return nombre.replace(" ", "_")
+
+    # Fallback si no se encuentra
     return f"pagina_{indice}"
 
 
 def subir_pdf_a_drive(drive, nombre_archivo, buffer_pdf):
-    """Sube un PDF a la carpeta indicada en Drive"""
     media = MediaIoBaseUpload(buffer_pdf, mimetype="application/pdf")
 
     drive.files().create(
