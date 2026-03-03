@@ -7,7 +7,7 @@ from pypdf import PdfReader, PdfWriter
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
+from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
 
 
 # ========= CONFIGURACIÓN =========
@@ -33,6 +33,35 @@ def get_drive_service():
 
     creds.refresh(Request())
     return build("drive", "v3", credentials=creds)
+
+
+def descargar_pdf_desde_drive(drive):
+    """Descarga nominas.pdf desde Drive y lo guarda localmente"""
+    results = drive.files().list(
+        q="name='nominas.pdf' and trashed=false",
+        fields="files(id, name)",
+        supportsAllDrives=True,
+        includeItemsFromAllDrives=True,
+        pageSize=1,
+    ).execute()
+
+    files = results.get("files", [])
+
+    if not files:
+        raise Exception("No se encontró nominas.pdf en Drive")
+
+    file_id = files[0]["id"]
+
+    request = drive.files().get_media(fileId=file_id)
+    fh = io.FileIO(PDF_ENTRADA, "wb")
+    downloader = MediaIoBaseDownload(fh, request)
+
+    done = False
+    while not done:
+        status, done = downloader.next_chunk()
+
+    fh.close()
+    print("✔ nominas.pdf descargado desde Drive")
 
 
 def mes_anterior():
@@ -82,8 +111,12 @@ def subir_pdf_a_drive(drive, nombre_archivo, buffer_pdf):
 
 
 def main():
-    reader = PdfReader(PDF_ENTRADA)
     drive = get_drive_service()
+
+    # 🔥 NUEVO: descargar el PDF desde Drive
+    descargar_pdf_desde_drive(drive)
+
+    reader = PdfReader(PDF_ENTRADA)
     mes = mes_anterior()
 
     for i, page in enumerate(reader.pages, start=1):
